@@ -1,17 +1,14 @@
-//
-//  AbmornalNoteApp.swift
-//  AbmornalNote
-//
-//  Created by Reynal Yesaya on 19/11/26.
-//
 
 import SwiftUI
+import SwiftData
 
 @main
 struct AbmornalNoteApp: App {
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: DailyJot.self)
     }
 }
