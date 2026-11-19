@@ -14,10 +14,21 @@ struct DailyJotsView: View {
     
     @Environment(\.modelContext)
     private var modelContext
-    
-    @State private var dayKey = JotDay.key()
-    
+
+    private let historyDayKey: String?
+
+    @State private var dayKey: String
+    @State private var showHistory = false
     @State private var saveError: String?
+
+    init(historyDayKey: String? = nil) {
+        self.historyDayKey = historyDayKey
+
+        _dayKey = State(
+            initialValue: historyDayKey ?? JotDay.key()
+        )
+    }
+
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -35,19 +46,47 @@ struct DailyJotsView: View {
                 )
                 .accessibilityAddTraits(.isHeader)
             
-            // Current Date
-            
-            Text(
-                JotDay.date(for: dayKey),
-                format: .dateTime
-                    .weekday(.wide)
-                    .month(.wide)
-                    .day()
-            )
-            .font(.system(size: 14))
-            .foregroundStyle(
-                AppTheme.secondaryText(colorScheme)
-            )
+            // MARK: - Current Date
+
+            HStack {
+                Text(
+                    JotDay.date(for: dayKey),
+                    format: .dateTime
+                        .weekday(.wide)
+                        .month(.wide)
+                        .day()
+                        .year()
+                )
+                .font(.system(size: 14))
+                .foregroundStyle(
+                    AppTheme.secondaryText(colorScheme)
+                )
+
+                Spacer()
+
+                if historyDayKey == nil {
+                    Button {
+                        showHistory = true
+                    } label: {
+                        Image(systemName: "calendar")
+                            .font(.system(
+                                size: 17,
+                                weight: .medium
+                            ))
+                            .foregroundStyle(
+                                AppTheme.text(colorScheme)
+                            )
+                            .frame(width: 44, height: 44)
+                            .glassEffect(
+                                .regular.interactive(),
+                                in: Circle()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Jot history")
+                }
+            }
+
             
             Divider()
                 .padding(.vertical, 8)
@@ -85,9 +124,15 @@ struct DailyJotsView: View {
                 .padding(12)
             }
         }
+        .sheet(isPresented: $showHistory) {
+            JotHistoryView()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
         .task(id: scenePhase) {
-            
-            guard scenePhase == .active else {
+
+            guard scenePhase == .active,
+                  historyDayKey == nil else {
                 return
             }
             
@@ -201,8 +246,15 @@ private struct DailyJotEditor: View {
                     jotRow(jot)
                 }
                 
-                addJotButton
+                if let lastJot = jots.last,
+                   !lastJot.content.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                   ).isEmpty {
+                    
+                    addJotButton
+                }
             }
+
             
             Spacer(minLength: 80)
             
@@ -231,6 +283,7 @@ private struct DailyJotEditor: View {
         }
     }
     
+
     // MARK: - Empty State
     
     private var emptyState: some View {
@@ -242,25 +295,10 @@ private struct DailyJotEditor: View {
                     AppTheme.secondaryText(colorScheme)
                 )
             
-            Button {
-                addJot()
-            } label: {
-                Text("Start writing...")
-                    .font(.system(size: 17))
-                    .foregroundStyle(
-                        AppTheme.secondaryText(colorScheme)
-                            .opacity(0.7)
-                    )
-                    .frame(
-                        maxWidth: .infinity,
-                        minHeight: 160,
-                        alignment: .topLeading
-                    )
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            addJotButton
         }
     }
+
     
     // MARK: - Individual Jot
     
@@ -337,6 +375,7 @@ private struct DailyJotEditor: View {
         }
     }
     
+
     // MARK: - Add Button
     
     private var addJotButton: some View {
@@ -345,18 +384,20 @@ private struct DailyJotEditor: View {
         } label: {
             HStack(spacing: 12) {
                 
-                Image(systemName: "plus")
-                    .font(.system(
-                        size: 13,
-                        weight: .medium
-                    ))
+                Circle()
+                    .fill(
+                        AppTheme.secondaryText(colorScheme)
+                            .opacity(0.35)
+                    )
+                    .frame(width: 5, height: 5)
                 
-                Text("New thought...")
-                    .font(.system(size: 15))
+                Text("Write a thought...")
+                    .font(.system(size: 17))
+                    .foregroundStyle(
+                        AppTheme.secondaryText(colorScheme)
+                            .opacity(0.7)
+                    )
             }
-            .foregroundStyle(
-                AppTheme.secondaryText(colorScheme)
-            )
             .frame(
                 maxWidth: .infinity,
                 minHeight: 44,
@@ -365,7 +406,9 @@ private struct DailyJotEditor: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Write a new thought")
     }
+
     
     // MARK: - Footer
     
