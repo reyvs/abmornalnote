@@ -8,6 +8,7 @@ struct ContentView: View {
     
     @State private var selectedPage: AppPage = .jots
     @State private var activeSheet: AppSheet?
+    @State private var isJotEditing = false
     
     @AppStorage("appAppearance")
     private var appearance = "system"
@@ -49,30 +50,69 @@ struct ContentView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    pageContent
+           
+            if selectedPage == .jots {
+
+                dailyJotsPage
+
+            } else {
+
+                ScrollView {
+
+                    VStack(
+                        alignment: .leading,
+                        spacing: 20
+                    ) {
+
+                        pageContent
+                    }
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .leading
+                    )
+                    .padding(
+                        .horizontal,
+                        AppTheme.screenPadding
+                    )
+                    .padding(.bottom, 24)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, AppTheme.screenPadding)
-                .padding(.bottom, 24)
+                .scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.interactively)
             }
-            .scrollIndicators(.hidden)
-            .scrollDismissesKeyboard(.interactively)
+
         }
         .background {
             AppTheme.background(activeScheme)
                 .ignoresSafeArea()
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            FloatingNavigation(
-                selection: $selectedPage,
-                onCapture: {
-                    activeSheet = .capture
-                }
-            )
-            .padding(.bottom, 8)
+
+        .safeAreaInset(
+            edge: .bottom,
+            spacing: 0
+        ) {
+
+            if selectedPage != .jots ||
+                !isJotEditing {
+
+                FloatingNavigation(
+                    selection: $selectedPage,
+
+                    onCapture: {
+                        activeSheet = .capture
+                    }
+                )
+                .padding(.bottom, 8)
+                .transition(
+                    .move(edge: .bottom)
+                    .combined(with: .opacity)
+                )
+            }
         }
+        .animation(
+            .easeInOut(duration: 0.25),
+            value: isJotEditing
+        )
+
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .settings:
@@ -148,9 +188,17 @@ struct ContentView: View {
 
     // MARK: - Daily Jots
     
+
     private var dailyJotsPage: some View {
-        DailyJotsView()
+
+        DailyJotsView(
+            onEditingChanged: { isEditing in
+
+                isJotEditing = isEditing
+            }
+        )
     }
+
 
     
     // MARK: - Temporary Pages
@@ -252,39 +300,86 @@ struct ContentView: View {
         .presentationDetents([.medium, .large])
     }
     
+
     // MARK: - Capture Sheet
-    
+
     private var captureSheet: some View {
+
         NavigationStack {
+
             List {
+
                 Section("Capture anything") {
-                    captureRow(
-                        "Quick jot",
-                        icon: "square.and.pencil"
-                    )
-                    
+
+                    NavigationLink {
+
+                        QuickJotCaptureView(
+                            onClose: {
+                                activeSheet = nil
+                            }
+                        )
+
+                    } label: {
+
+                        HStack(spacing: 14) {
+
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(
+                                    size: 20,
+                                    weight: .medium
+                                ))
+                                .foregroundStyle(AppTheme.obsidian)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    AppTheme.lime,
+                                    in: RoundedRectangle(
+                                        cornerRadius: 14
+                                    )
+                                )
+
+                            VStack(
+                                alignment: .leading,
+                                spacing: 4
+                            ) {
+
+                                Text("Quick jot")
+                                    .font(.system(
+                                        size: 16,
+                                        weight: .medium
+                                    ))
+                                    .foregroundStyle(Color.primary)
+
+                                Text("Save a thought to today's jots.")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.secondary)
+                            }
+                        }
+                        .padding(.vertical, 6)
+                    }
+
                     captureRow(
                         "Organize with AI",
                         icon: "sparkles"
                     )
-                    
+
                     captureRow(
                         "New task",
                         icon: "checklist"
                     )
-                    
+
                     captureRow(
                         "New event",
                         icon: "calendar.badge.plus"
                     )
-                    
+
                     captureRow(
                         "New note",
                         icon: "doc.text"
                     )
                 }
-                
+
                 Section {
+
                     Text(
                         "Capture features will be enabled in the next development phases."
                     )
@@ -295,7 +390,11 @@ struct ContentView: View {
             .navigationTitle("Quick capture.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+
+                ToolbarItem(
+                    placement: .confirmationAction
+                ) {
+
                     Button("Done") {
                         activeSheet = nil
                     }
@@ -304,11 +403,12 @@ struct ContentView: View {
         }
         .presentationDetents([.large])
     }
-    
+
     private func captureRow(
         _ title: String,
         icon: String
     ) -> some View {
+
         Label(title, systemImage: icon)
             .foregroundStyle(.secondary)
     }

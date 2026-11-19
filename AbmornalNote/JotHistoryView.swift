@@ -649,24 +649,18 @@ struct JotHistoryView: View {
         }
     }
 
+
     // MARK: - Open Historical Jots
 
     private var openJotsButton: some View {
+
         NavigationLink {
-            ScrollView {
-                DailyJotsView(
-                    historyDayKey: JotDay.key(
-                        for: selectedDate
-                    )
+
+            DailyJotsView(
+                historyDayKey: JotDay.key(
+                    for: selectedDate
                 )
-                .padding(AppTheme.screenPadding)
-                .frame(
-                    maxWidth: .infinity,
-                    alignment: .leading
-                )
-            }
-            .scrollIndicators(.hidden)
-            .scrollDismissesKeyboard(.interactively)
+            )
             .background {
                 AppTheme.background(colorScheme)
                     .ignoresSafeArea()
@@ -677,6 +671,7 @@ struct JotHistoryView: View {
         } label: {
 
             HStack {
+
                 Spacer()
 
                 Text("Open daily jots")
